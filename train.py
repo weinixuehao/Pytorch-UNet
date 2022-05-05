@@ -18,6 +18,8 @@ from unet import UNet
 import shutil
 import os
 import cv2
+import numpy as np
+from matplotlib import pyplot as plt
 
 dir_img = Path('./data/imgs/')
 dir_mask = Path('./data/masks/')
@@ -50,10 +52,10 @@ def train_net(net,
     val_loader = DataLoader(val_set, shuffle=False, drop_last=True, **loader_args)
 
     # (Initialize logging)
-    experiment = wandb.init(project='U-Net', resume='allow', anonymous='must')
-    experiment.config.update(dict(epochs=epochs, batch_size=batch_size, learning_rate=learning_rate,
-                                  val_percent=val_percent, save_checkpoint=save_checkpoint, img_scale=img_scale,
-                                  amp=amp))
+    # experiment = wandb.init(project='U-Net', resume='allow', anonymous='must')
+    # experiment.config.update(dict(epochs=epochs, batch_size=batch_size, learning_rate=learning_rate,
+    #                               val_percent=val_percent, save_checkpoint=save_checkpoint, img_scale=img_scale,
+    #                               amp=amp))
 
     logging.info(f'''Starting training:
         Epochs:          {epochs}
@@ -96,14 +98,24 @@ def train_net(net,
             with torch.cuda.amp.autocast(enabled=amp):
                 optimizer.zero_grad()
                 masks_pred = net(images)
-                # masks_pred = F.sigmoid(masks_pred)
-                masks_pred = torch.softmax(masks_pred)
+                masks_pred = F.sigmoid(masks_pred)
+                # masks_pred = torch.softmax(masks_pred, dim=3)
                 loss = criterion(masks_pred, true_masks)
                 loss.backward()
                 optimizer.step()
                 running_loss += loss.item() * images.size(0)
         epoch_loss = running_loss / dataset_size
         print(f"epoch={epoch} epoch_loss={epoch_loss}")
+        if epoch % 5 == 0:
+            image_tuples, val_score = evaluate(net, val_loader, device)
+            for batchidx, (preds_mask, true_masks) in enumerate(image_tuples):
+                for idx, (pred_mask, true_mask) in enumerate(zip(preds_mask, true_masks)):
+                    f, axarr = plt.subplots(1,2)
+                    axarr[0].imshow(pred_mask)
+                    axarr[0].title.set_text('pred_mask')
+                    axarr[1].imshow(true_mask)
+                    axarr[1].title.set_text('true_mask')
+                    f.savefig(f"{output_dir}/epoch_{epoch}_batchidx_{batchidx}_idx_{idx}.jpg")
                     # loss = criterion(masks_pred, true_masks) \
                     #        + dice_loss(F.softmax(masks_pred, dim=1).float(),
                     #                    F.one_hot(true_masks, net.n_classes).permute(0, 3, 1, 2).float(),

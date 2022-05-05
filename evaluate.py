@@ -23,7 +23,7 @@ def evaluate(net, dataloader, device):
         with torch.no_grad():
             # predict the mask
             mask_pred = net(image)
-            mask_pred = (F.sigmoid(mask_pred) * 255).to(device=device, dtype=torch.uint8)
+            mask_pred = (torch.sigmoid(mask_pred) * 255).to(device=device, dtype=torch.uint8)
             mask_true = (mask_true * 255).to(device=device, dtype=torch.uint8)
             mask_pred = mask_pred.permute(0, 3, 2, 1).squeeze(0).cpu().detach().numpy()
             mask_true = mask_true.permute(0, 3, 2, 1).squeeze(0).cpu().detach().numpy()
