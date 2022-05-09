@@ -93,12 +93,12 @@ def train_net(net,
                 'the images are loaded correctly.'
 
             images = images.to(device=device, dtype=torch.float32)
-            true_masks = true_masks.to(device=device, dtype=torch.float32)
+            true_masks = torch.argmax(true_masks.to(device=device, dtype=torch.long), dim=1)
 
             with torch.cuda.amp.autocast(enabled=amp):
                 optimizer.zero_grad()
                 masks_pred = net(images)
-                masks_pred = F.sigmoid(masks_pred)
+                # masks_pred = F.sigmoid(masks_pred)
                 # masks_pred = torch.softmax(masks_pred, dim=3)
                 loss = criterion(masks_pred, true_masks)
                 loss.backward()
@@ -165,10 +165,10 @@ def train_net(net,
                 #             **histograms
                 #         })
 
-        if save_checkpoint:
-            Path(dir_checkpoint).mkdir(parents=True, exist_ok=True)
-            torch.save(net.state_dict(), str(dir_checkpoint / 'checkpoint_epoch{}.pth'.format(epoch)))
-            logging.info(f'Checkpoint {epoch} saved!')
+        # if save_checkpoint:
+        #     Path(dir_checkpoint).mkdir(parents=True, exist_ok=True)
+        #     torch.save(net.state_dict(), str(dir_checkpoint / 'checkpoint_epoch{}.pth'.format(epoch)))
+        #     logging.info(f'Checkpoint {epoch} saved!')
 
 
 def get_args():

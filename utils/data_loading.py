@@ -40,6 +40,8 @@ class BasicDataset(Dataset):
                 img_ndarray = img_ndarray.transpose((2, 0, 1))
 
             img_ndarray = img_ndarray / 255
+        else:
+            img_ndarray = img_ndarray.transpose((2, 0, 1))
 
         return img_ndarray
 
@@ -67,7 +69,7 @@ class BasicDataset(Dataset):
             f'Image and mask {name} should be the same size, but are {img.size} and {mask.size}'
 
         img = self.preprocess(img, self.scale, is_mask=False)
-        mask = self.preprocess(mask, self.scale, is_mask=False)
+        mask = self.preprocess(mask, self.scale, is_mask=True)
 
         return {
             'image': torch.as_tensor(img.copy()).float().contiguous(),
